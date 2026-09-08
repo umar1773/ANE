@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANE Services | Customer Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F4F0E8;
+    --bone-2:#EAE2D3;
+    --ink:#2B2723;
+    --ink-soft:#524B43;
+    --sage:#8FA089;
+    --sage-deep:#6E8168;
+    --mauve:#C4919F;
+    --mauve-deep:#A96E7E;
+    --brass:#C9A15A;
+    --line: rgba(43,39,35,0.12);
+    --display:'Fraunces', serif;
+    --body:'Work Sans', sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+    --r: 18px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bone); color:var(--ink-soft);
+    font-family:var(--body); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:var(--display); color:var(--ink); margin:0; font-weight:500; }
+  .container{ max-width:1180px; margin:0 auto; padding:0 24px; }
+
+  /* ---------- PASSWORD GATE ---------- */
+  #gate{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:18px; padding:24px;
+  }
+  #gate .card{
+    background:#FBF9F4; border:1px solid var(--line); border-radius:var(--r);
+    padding:40px 36px; width:100%; max-width:360px; text-align:center;
+  }
+  #gate h1{ font-size:22px; margin-bottom:6px; }
+  #gate p{ font-size:13.5px; margin-bottom:22px; }
+  #gate input{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
+    font-size:14px; font-family:var(--body); margin-bottom:12px; background:#fff; color:var(--ink);
+  }
+  #gate input:focus{ outline:none; border-color:var(--mauve-deep); box-shadow:0 0 0 3px rgba(169,110,126,0.12); }
+  #gate button{
+    width:100%; padding:13px; border:none; border-radius:999px; background:var(--ink); color:var(--bone);
+    font-family:var(--mono); font-size:13px; letter-spacing:0.05em; cursor:pointer; transition:.25s;
+  }
+  #gate button:hover{ background:var(--sage-deep); }
+  #gate .error{ color:var(--mauve-deep); font-size:12.5px; margin-top:10px; display:none; }
+
+  /* ---------- DASHBOARD ---------- */
+  #dashboard{ display:none; padding:40px 0 80px; }
+  .dash-header{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:32px; }
+  .dash-header h1{ font-size:28px; }
+  .dash-header p{ font-size:13.5px; margin-top:4px; }
+  .top-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  #searchInput{
+    padding:11px 16px; border:1px solid var(--line); border-radius:999px;
+    font-size:13.5px; font-family:var(--body); background:#fff; color:var(--ink); min-width:220px;
+  }
+  #searchInput:focus{ outline:none; border-color:var(--mauve-deep); }
+  .btn-refresh{
+    padding:11px 20px; border:1px solid var(--ink); border-radius:999px; background:none;
+    color:var(--ink); font-family:var(--mono); font-size:12.5px; cursor:pointer; transition:.25s;
+  }
+  .btn-refresh:hover{ background:var(--ink); color:var(--bone); }
+
+  .status-row{ font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin-bottom:18px; }
+
+  .table-wrap{ background:#FBF9F4; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; padding:14px 18px; font-family:var(--mono); font-size:11px; letter-spacing:0.07em;
+    text-transform:uppercase; color:var(--brass); border-bottom:1px solid var(--line); background:var(--bone-2);
+  }
+  tbody td{ padding:16px 18px; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:rgba(143,160,137,0.06); }
+  .name-cell{ font-weight:600; color:var(--ink); }
+  .email-cell{ font-family:var(--mono); font-size:12.5px; }
+  .chat-toggle-cell{ cursor:pointer; color:var(--mauve-deep); font-family:var(--mono); font-size:12px; }
+  .chat-history{ display:none; white-space:pre-wrap; font-size:13px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; margin-top:8px; }
+  .chat-history.open{ display:block; }
+  .empty-state, .error-state{ text-align:center; padding:60px 20px; font-size:14px; }
+  .error-state{ color:var(--mauve-deep); }
+
+  @media (max-width:700px){
+    thead{ display:none; }
+    tbody tr{ display:block; border-bottom:1px solid var(--line); padding:14px 0; }
+    tbody td{ display:block; border:none; padding:4px 18px; }
+    tbody td::before{ content:attr(data-label); font-family:var(--mono); font-size:10.5px; color:var(--brass); text-transform:uppercase; display:block; margin-bottom:2px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="card">
+    <h1>ANE Services</h1>
+    <p>Enter the dashboard password to continue.</p>
+    <input type="password" id="passwordInput" placeholder="Password" />
+    <button id="unlockBtn">Unlock Dashboard</button>
+    <div class="error" id="gateError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="container">
+    <div class="dash-header">
+      <div>
+        <h1>Customer Data</h1>
+        <p>Live from your n8n workflow &amp; Google Sheet.</p>
+      </div>
+      <div class="top-controls">
+        <input type="text" id="searchInput" placeholder="Search name or email..." />
+        <button class="btn-refresh" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+    <div class="status-row" id="statusRow">Loading...</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Chat History</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ====== ONLY THE URL LIVES HERE — NO SECRET IS STORED IN THIS FILE ======
+  const WEBHOOK_URL = "https://double1773.app.n8n.cloud/webhook/customer_data"; // n8n production webhook URL
+  // ==========================================================================
+
+  let allRows = [];
+  let sessionKey = null; // the password the person types becomes the actual webhook key — never hardcoded
+
+  const gate = document.getElementById('gate');
+  const dashboard = document.getElementById('dashboard');
+  const passwordInput = document.getElementById('passwordInput');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const gateError = document.getElementById('gateError');
+  const tableBody = document.getElementById('tableBody');
+  const statusRow = document.getElementById('statusRow');
+  const searchInput = document.getElementById('searchInput');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  async function unlock() {
+    const typed = passwordInput.value.trim();
+    if (!typed) return;
+    gateError.style.display = 'none';
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Checking...';
+
+    const ok = await tryLoad(typed);
+
+    unlockBtn.disabled = false;
+    unlockBtn.textContent = 'Unlock Dashboard';
+
+    if (ok) {
+      sessionKey = typed;
+      sessionStorage.setItem('ane_dash_key', typed); // stays only in this browser tab's session, never in the file
+      gate.style.display = 'none';
+      dashboard.style.display = 'block';
+    } else {
+      gateError.style.display = 'block';
+    }
+  }
+  unlockBtn.addEventListener('click', unlock);
+  passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+
+  const savedKey = sessionStorage.getItem('ane_dash_key');
+  if (savedKey) {
+    sessionKey = savedKey;
+    gate.style.display = 'none';
+    dashboard.style.display = 'block';
+    loadData();
+  }
+
+  // Returns true/false — used both by the gate (to verify the password) and by Refresh
+  async function tryLoad(keyToTry) {
+    statusRow.textContent = 'Loading...';
+    try {
+      const url = `${WEBHOOK_URL}?key=${encodeURIComponent(keyToTry)}`;
+      const res = await fetch(url);
+      const data = await res.json().catch(() => null);
+      if (!res.ok || (data && data.error)) {
+        statusRow.textContent = '';
+        return false;
+      }
+      allRows = Array.isArray(data) ? data : (data && data.rows) || [];
+      statusRow.textContent = `${allRows.length} customer${allRows.length === 1 ? '' : 's'} • Last updated ${new Date().toLocaleTimeString()}`;
+      render(allRows);
+      return true;
+    } catch (err) {
+      console.error(err);
+      statusRow.textContent = '';
+      return false;
+    }
+  }
+
+  async function loadData() {
+    if (!sessionKey) return;
+    const ok = await tryLoad(sessionKey);
+    if (!ok) {
+      tableBody.innerHTML = `<tr><td colspan="3"><div class="error-state">Could not load data. The workflow may be inactive, or the session expired — try reloading the page.</div></td></tr>`;
+    }
+  }
+
+  function render(rows) {
+    if (!rows.length) {
+      tableBody.innerHTML = `<tr><td colspan="3"><div class="empty-state">No customer data yet.</div></td></tr>`;
+      return;
+    }
+    tableBody.innerHTML = rows.map((row, i) => {
+      const name = row.name || row.Name || '—';
+      const email = row.email || row.Email || '—';
+      const chat = row.chatHistory || row.chat_history || row['Chat History'] || '';
+      return `
+        <tr>
+          <td class="name-cell" data-label="Name">${escapeHtml(name)}</td>
+          <td class="email-cell" data-label="Email">${escapeHtml(email)}</td>
+          <td data-label="Chat History">
+            <span class="chat-toggle-cell" onclick="toggleChat(${i})">View chat ▾</span>
+            <div class="chat-history" id="chat-${i}">${escapeHtml(chat) || 'No chat history recorded.'}</div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function toggleChat(i) {
+    document.getElementById('chat-' + i).classList.toggle('open');
+  }
+  window.toggleChat = toggleChat;
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase();
+    const filtered = allRows.filter(r =>
+      (r.name || r.Name || '').toLowerCase().includes(q) ||
+      (r.email || r.Email || '').toLowerCase().includes(q)
+    );
+    render(filtered);
+  });
+
+  refreshBtn.addEventListener('click', loadData);
+</script>
+
+</body>
+</html>
